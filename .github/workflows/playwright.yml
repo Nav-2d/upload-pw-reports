@@ -107,7 +107,22 @@ jobs:
             fi
           done
       - name: Output Report URL as Worfklow Annotation
+        if: github.ref != 'refs/heads/main'
         run: |
           FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH
-
+          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+      - uses: actions/github-script@v7
+        if: github.ref != 'refs/heads/main'
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH'
+            })
+      - name: Output Report URL as Worfklow Annotation
+        if: github.ref == 'refs/heads/main'
+        run: |
+          FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH_MAIN
           echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"

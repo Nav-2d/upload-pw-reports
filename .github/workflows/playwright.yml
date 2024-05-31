@@ -64,35 +64,40 @@ jobs:
 
   publish_report:
     name: Publish HTML Report
-    # using always() is not ideal here, because it would also run if the workflow was cancelled
     if: "success() || needs.test.result == 'failure'"
     needs: [merge-reports]
     runs-on: ubuntu-latest
     continue-on-error: true
+
     env:
       HTML_REPORT_URL_PATH_MAIN: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
       HTML_REPORT_URL_PATH: reports/${{ github.head_ref }}/${{ github.run_id }}/${{ github.run_attempt }}
+
     steps:
       - name: Checkout GitHub Pages Branch
         uses: actions/checkout@v2
         with:
           ref: gh-pages
+
       - name: Set Git User
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Download zipped HTML report
         uses: actions/download-artifact@v4
         if: github.ref != 'refs/heads/main'
         with:
           name: playwright-report
           path: ${{ env.HTML_REPORT_URL_PATH }}
+
       - name: Download zipped HTML report for main branch
         uses: actions/download-artifact@v4
         if: github.ref == 'refs/heads/main'
         with:
           name: playwright-report
           path: ${{ env.HTML_REPORT_URL_PATH_MAIN }}
+
       - name: Push HTML Report
         timeout-minutes: 3
         run: |
@@ -112,8 +117,31 @@ jobs:
               exit 0
             fi
           done
+
+      - name: Set FULL_HTML_REPORT_URL
+        if: github.ref != 'refs/heads/main'
+        run: echo "FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH" >> $GITHUB_ENV
+
       - name: Output Report URL as Worfklow Annotation
+        if: github.ref != 'refs/heads/main'
         run: |
           FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH
+          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
 
+      - uses: actions/github-script@v7
+        if: github.ref != 'refs/heads/main'
+        with:
+          script: |
+            const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📋 Published Playwright Test Report: [View Report](${fullReportUrl})`
+            })
+
+      - name: Output Report URL as Worfklow Annotation
+        if: github.ref == 'refs/heads/main'
+        run: |
+          FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH_MAIN
           echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"

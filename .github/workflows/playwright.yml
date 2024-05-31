@@ -77,10 +77,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: gh-pages
-      # - name: Set Git User
-      #   run: |
-      #     git config --global user.name "github-actions[bot]"
-      #     git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Set Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
       - name: Download zipped HTML report
         uses: actions/download-artifact@v4
         if: github.ref != 'refs/heads/main'

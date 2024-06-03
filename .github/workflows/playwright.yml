@@ -4,6 +4,11 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 jobs:
   playwright-tests:
     timeout-minutes: 60
@@ -32,11 +37,15 @@ jobs:
           name: blob-report-${{ matrix.shardIndex }}
           path: blob-report
           retention-days: 1
+
   merge-reports:
     needs: [playwright-tests]
     if: ${{ always() && (needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'failure') }}
     runs-on: ubuntu-latest
     continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,93 +73,102 @@ jobs:
         uses: geekyeggo/delete-artifact@v5
         with:
           name: blob-report-*
-
-  publish_report:
-    name: Publish HTML Report
-    if: "success() || needs.test.result == 'failure'"
-    needs: [playwright-tests, merge-reports]
-    runs-on: ubuntu-latest
-    continue-on-error: true
-
-    env:
-      HTML_REPORT_URL_PATH_MAIN: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
-      HTML_REPORT_URL_PATH: reports/${{ github.head_ref }}/${{ github.run_id }}/${{ github.run_attempt }}
-
-    steps:
-      - name: Checkout GitHub Pages Branch
-        uses: actions/checkout@v2
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          ref: gh-pages
+          path: "playwright-report/"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
-      - name: Set Git User
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+  # publish_report:
+  #   name: Publish HTML Report
+  #   if: "success() || needs.test.result == 'failure'"
+  #   needs: [playwright-tests, merge-reports]
+  #   runs-on: ubuntu-latest
+  #   continue-on-error: true
 
-      - name: Download zipped HTML report
-        uses: actions/download-artifact@v4
-        if: github.ref != 'refs/heads/main'
-        with:
-          name: playwright-report
-          path: ${{ env.HTML_REPORT_URL_PATH }}
+  #   env:
+  #     HTML_REPORT_URL_PATH_MAIN: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
+  #     HTML_REPORT_URL_PATH: reports/${{ github.head_ref }}/${{ github.run_id }}/${{ github.run_attempt }}
 
-      - name: Download zipped HTML report for main branch
-        uses: actions/download-artifact@v4
-        if: github.ref == 'refs/heads/main'
-        with:
-          name: playwright-report
-          path: ${{ env.HTML_REPORT_URL_PATH_MAIN }}
+  #   steps:
+  #     - name: Checkout GitHub Pages Branch
+  #       uses: actions/checkout@v2
+  #       with:
+  #         ref: gh-pages
 
-      - name: Push HTML Report
-        timeout-minutes: 3
-        run: |
-          git add .
-          git commit -m "workflow: add HTML report for run-id ${{ github.run_id }} (attempt:  ${{ github.run_attempt }})"
+  #     - name: Set Git User
+  #       run: |
+  #         git config --global user.name "github-actions[bot]"
+  #         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          while true; do
-            git pull --rebase
-            if [ $? -ne 0 ]; then
-              echo "Failed to rebase. Please review manually."
-              exit 1
-            fi
+  #     - name: Download zipped HTML report
+  #       uses: actions/download-artifact@v4
+  #       if: github.ref != 'refs/heads/main'
+  #       with:
+  #         name: playwright-report
+  #         path: ${{ env.HTML_REPORT_URL_PATH }}
 
-            git push
-            if [ $? -eq 0 ]; then
-              echo "Successfully pushed HTML report to repo."
-              exit 0
-            fi
-          done
+  #     - name: Download zipped HTML report for main branch
+  #       uses: actions/download-artifact@v4
+  #       if: github.ref == 'refs/heads/main'
+  #       with:
+  #         name: playwright-report
+  #         path: ${{ env.HTML_REPORT_URL_PATH_MAIN }}
 
-      - name: Set FULL_HTML_REPORT_URL
-        if: github.ref != 'refs/heads/main'
-        run: echo "FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH" >> $GITHUB_ENV
+  #     - name: Push HTML Report
+  #       timeout-minutes: 3
+  #       run: |
+  #         git add .
+  #         git commit -m "workflow: add HTML report for run-id ${{ github.run_id }} (attempt:  ${{ github.run_attempt }})"
 
-      - name: Output Report URL as Worfklow Annotation
-        if: github.ref != 'refs/heads/main'
-        run: |
-          FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH
-          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+  #         while true; do
+  #           git pull --rebase
+  #           if [ $? -ne 0 ]; then
+  #             echo "Failed to rebase. Please review manually."
+  #             exit 1
+  #           fi
 
-      - uses: actions/github-script@v7
-        if: github.ref != 'refs/heads/main'
-        with:
-          script: |
-            const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
-            const emoji = ${{needs.playwright-tests.result == 'success' }} ? ':x:' : ':white_check_mark:';
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
-            })
+  #           git push
+  #           if [ $? -eq 0 ]; then
+  #             echo "Successfully pushed HTML report to repo."
+  #             exit 0
+  #           fi
+  #         done
 
-      - name: Delete zipped playwright reports
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: *-report
+  #     - name: Set FULL_HTML_REPORT_URL
+  #       if: github.ref != 'refs/heads/main'
+  #       run: echo "FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH" >> $GITHUB_ENV
 
-      - name: Output Report URL as Worfklow Annotation
-        if: github.ref == 'refs/heads/main'
-        run: |
-          FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH_MAIN
-          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+  #     - name: Output Report URL as Worfklow Annotation
+  #       if: github.ref != 'refs/heads/main'
+  #       run: |
+  #         FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH
+  #         echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+
+  #     - uses: actions/github-script@v7
+  #       if: github.ref != 'refs/heads/main'
+  #       with:
+  #         script: |
+  #           const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
+  #           const emoji = ${{needs.playwright-tests.result == 'success' }} ? ':x:' : ':white_check_mark:';
+  #           github.rest.issues.createComment({
+  #             issue_number: context.issue.number,
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
+  #           })
+
+  #     - name: Delete zipped playwright reports
+  #       uses: geekyeggo/delete-artifact@v5
+  #       with:
+  #         name: *-report
+
+  #     - name: Output Report URL as Worfklow Annotation
+  #       if: github.ref == 'refs/heads/main'
+  #       run: |
+  #         FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH_MAIN
+  #         echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"

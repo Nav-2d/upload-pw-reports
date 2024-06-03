@@ -1,8 +1,8 @@
 name: Delete
 
 on:
-  delete:
-    branches-ignore: [main, gh-pages]
+  pull_request:
+    types: [closed]
 
 # ensures that currently running Playwright workflow of deleted branch gets cancelled
 concurrency:
@@ -26,6 +26,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "::notice $BRANCH_REPORTS_DIR"
       - name: Check for workflow reports
         run: |
           if [ -z "$(ls -A $BRANCH_REPORTS_DIR)" ]; then

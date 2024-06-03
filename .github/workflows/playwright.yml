@@ -131,11 +131,12 @@ jobs:
         with:
           script: |
             const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
+             const emoji = needs.playwright-tests.result == 'success' ? ':x:' : ':white_check_mark:';
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `📋 Published Playwright Test Report: [View Report](${fullReportUrl})`
+              body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
             })
 
       - name: Output Report URL as Worfklow Annotation

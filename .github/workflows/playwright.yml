@@ -147,7 +147,7 @@ jobs:
       - name: Delete zipped playwright reports
         uses: geekyeggo/delete-artifact@v5
         with:
-          name: playwright-report
+          name: *-report
 
       - name: Output Report URL as Worfklow Annotation
         if: github.ref == 'refs/heads/main'

@@ -4,11 +4,6 @@ on:
   pull_request:
     types: [closed]
 
-# ensures that currently running Playwright workflow of deleted branch gets cancelled
-concurrency:
-  group: ${{ github.event.ref }}
-  cancel-in-progress: true
-
 jobs:
   delete_reports:
     name: Delete Reports

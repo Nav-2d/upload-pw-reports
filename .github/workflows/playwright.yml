@@ -63,7 +63,7 @@ jobs:
   publish_report:
     name: Publish HTML Report
     if: "success() || needs.test.result == 'failure'"
-    needs: [merge-reports]
+    needs: [playwright-tests, merge-reports]
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -120,7 +120,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         run: echo "FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH" >> $GITHUB_ENV
 
-      - name: Set FULL_HTML_REPORT_URL
+      - name: Set result
         if: github.ref != 'refs/heads/main'
         run: echo "needs.playwright-tests.result" >> $TEST_RESULT
 

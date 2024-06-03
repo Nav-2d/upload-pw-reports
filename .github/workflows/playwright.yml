@@ -120,15 +120,41 @@ jobs:
         if: github.ref != 'refs/heads/main'
         run: echo "FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH" >> $GITHUB_ENV
 
-      - name: Set result
-        if: github.ref != 'refs/heads/main'
-        run: echo "needs.playwright-tests.result" >> $TEST_RESULT
-
       - name: Output Report URL as Worfklow Annotation
         if: github.ref != 'refs/heads/main'
         run: |
           FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH
           echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
+
+      - uses: actions/github-script@v7
+        if: github.ref != 'refs/heads/main'
+        with:
+          script: |
+            const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
+            const emoji = ${{needs.playwright-tests.result}} == 'success' ? ':x:' : ':white_check_mark:';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
+            })
+
+      - uses: actions/github-script@v7
+        if: github.ref != 'refs/heads/main'
+        with:
+          script: |
+            const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
+            const emoji = ${{needs.playwright-tests.result == 'success' }} ? ':x:' : ':white_check_mark:';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
+            })
+
+      - name: Set result
+        if: github.ref != 'refs/heads/main'
+        run: echo ${{needs.playwright-tests.result}} >> $TEST_RESULT
 
       - uses: actions/github-script@v7
         if: github.ref != 'refs/heads/main'
@@ -142,7 +168,6 @@ jobs:
               repo: context.repo.repo,
               body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
             })
-
       - name: Output Report URL as Worfklow Annotation
         if: github.ref == 'refs/heads/main'
         run: |

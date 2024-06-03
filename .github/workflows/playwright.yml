@@ -120,6 +120,10 @@ jobs:
         if: github.ref != 'refs/heads/main'
         run: echo "FULL_HTML_REPORT_URL=https://nav-2d.github.io/upload-pw-reports/$HTML_REPORT_URL_PATH" >> $GITHUB_ENV
 
+      - name: Set FULL_HTML_REPORT_URL
+        if: github.ref != 'refs/heads/main'
+        run: echo "needs.playwright-tests.result" >> $TEST_RESULT
+
       - name: Output Report URL as Worfklow Annotation
         if: github.ref != 'refs/heads/main'
         run: |
@@ -131,7 +135,7 @@ jobs:
         with:
           script: |
             const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
-             const emoji = needs.playwright-tests.result == 'success' ? ':x:' : ':white_check_mark:';
+            const emoji = process.env.TEST_RESULT == 'success' ? ':x:' : ':white_check_mark:';
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,

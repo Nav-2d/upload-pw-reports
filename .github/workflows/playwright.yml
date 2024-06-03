@@ -45,7 +45,7 @@ jobs:
     continue-on-error: true
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://nav-2d.github.io/upload-pw-reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

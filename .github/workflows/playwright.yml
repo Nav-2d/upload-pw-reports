@@ -60,6 +60,11 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+      - name: Delete blob files
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: blob-report-*
+
   publish_report:
     name: Publish HTML Report
     if: "success() || needs.test.result == 'failure'"
@@ -139,22 +144,11 @@ jobs:
               body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
             })
 
-      - name: Set result
-        if: github.ref != 'refs/heads/main'
-        run: echo ${{needs.playwright-tests.result}} >> $TEST_RESULT
-
-      - uses: actions/github-script@v7
-        if: github.ref != 'refs/heads/main'
+      - name: Delete zipped playwright reports
+        uses: geekyeggo/delete-artifact@v5
         with:
-          script: |
-            const fullReportUrl = process.env.FULL_HTML_REPORT_URL;
-            const emoji = process.env.TEST_RESULT == 'success' ? ':x:' : ':white_check_mark:';
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `${emoji} Published Playwright Test Report: [View Report](${fullReportUrl})`
-            })
+          name: playwright-report
+
       - name: Output Report URL as Worfklow Annotation
         if: github.ref == 'refs/heads/main'
         run: |

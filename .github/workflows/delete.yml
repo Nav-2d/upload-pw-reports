@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Contains all reports for deleted branch
-      BRANCH_REPORTS_DIR: reports
+      BRANCH_REPORTS_DIR: reports/${{ github.event.pull_request.head.ref }}
     steps:
       - name: Checkout GitHub Pages Branch
         uses: actions/checkout@v2
@@ -30,7 +30,7 @@ jobs:
         if: ${{ env.BRANCH_REPORTS_EXIST == 'true' }}
         timeout-minutes: 3
         run: |
-          cd $BRANCH_REPORTS_DIR/..
+          cd reports
 
           git rm -r ${{ github.event.pull_request.head.ref }}
           git commit -c  user.name "github-actions[bot]" user.email "41898282+github-actions[bot]@users.noreply.github.com" -m "workflow: remove all reports for branch ${{ github.event.pull_request.head.ref  }}"

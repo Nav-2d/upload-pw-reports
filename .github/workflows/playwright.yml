@@ -43,9 +43,6 @@ jobs:
     if: ${{ always() && (needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'failure') }}
     runs-on: ubuntu-latest
     continue-on-error: true
-    # environment:
-    #   name: github-pages
-    #   url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -78,4 +75,4 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: playwright-report
-          target-folder: ${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
+          target-folder: reports/${{ github.head_ref }}/${{ github.run_id }}/latest-${{ github.run_attempt }}

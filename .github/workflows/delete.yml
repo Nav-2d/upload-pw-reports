@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Contains all reports for deleted branch
-      BRANCH_REPORTS_DIR: reports/${{ github.event.pull_request.head.ref }}
+      BRANCH_REPORTS_DIR: reports
     steps:
       - name: Checkout GitHub Pages Branch
         uses: actions/checkout@v2

@@ -33,7 +33,7 @@ jobs:
           cd reports
 
           git rm -r ${{ github.event.pull_request.head.ref }}
-          git commit -c  user.name "github-actions[bot]" user.email "41898282+github-actions[bot]@users.noreply.github.com" -m "workflow: remove all reports for branch ${{ github.event.pull_request.head.ref  }}"
+          git commit -m "workflow: remove all reports for branch ${{ github.event.pull_request.head.ref }}"
 
           while true; do
             git push

@@ -6,7 +6,14 @@ export default defineConfig({
 
   workers: 1,
 
-  reporter: process.env.CI ? [["list"], ["blob"]] : [["list"]],
+  reporter: [
+      [
+        `html`,
+        {
+          open: `never`,
+        },
+      ],
+    ],
 
   use: {
     trace: "on",
